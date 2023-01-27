@@ -1,4 +1,4 @@
-package hello
+package internal
 
 import (
 	"testing"
@@ -6,7 +6,8 @@ import (
 
 func TestHello(t *testing.T) {
 	want := "Hello, world."
-	if got := Hello(); got != want {
+	testHi := &Hi{}
+	if got := testHi.Hello(); got != want {
 		t.Errorf("Hello() = %q, want %q", got, want)
 	}
 }
