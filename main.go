@@ -9,4 +9,7 @@ import (
 func main() {
 	testHi := &Hi{}
 	fmt.Println(testHi.Hello())
+
+	c := make(chan int)
+	<-c
 }
