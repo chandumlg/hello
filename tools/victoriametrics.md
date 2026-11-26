@@ -121,7 +121,7 @@ WITH (f = {service="api", env="prod"})
 # Keep the metric name after a function (PromQL drops it)
 rate(http_requests_total[5m]) keep_metric_names
 
-# Fill gaps with a default and cap outliers
+# Fill gaps with a default value
 (rate(errors_total[5m]) default 0)
 ```
 
