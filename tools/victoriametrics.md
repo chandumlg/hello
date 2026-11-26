@@ -34,7 +34,8 @@ docker run -d --name vm -p 8428:8428 \
   -v vm-data:/victoria-metrics-data \
   victoriametrics/victoria-metrics:latest \
   -storageDataPath=/victoria-metrics-data \
-  -retentionPeriod=6        # months; default is only 1 month
+  -retentionPeriod=6
+# retentionPeriod is in months by default; the default is only 1 month
 
 # Ingest a sample using the Prometheus text exposition format
 curl -d 'http_requests_total{service="api",code="200"} 42' \
@@ -65,7 +66,8 @@ vmagent \
   -promscrape.config=/etc/vmagent/scrape.yml \
   -remoteWrite.url=http://victoriametrics:8428/api/v1/write \
   -remoteWrite.url=http://backup-region-vm:8428/api/v1/write \
-  -remoteWrite.tmpDataPath=/var/lib/vmagent   # on-disk buffer when a target is down
+  -remoteWrite.tmpDataPath=/var/lib/vmagent
+# tmpDataPath is the on-disk buffer used while a remote-write target is down
 ```
 
 ```yaml
@@ -89,9 +91,10 @@ On Kubernetes, the `victoria-metrics-k8s-stack` Helm chart plus the VictoriaMetr
 ```bash
 vmalert \
   -datasource.url=http://victoriametrics:8428 \
-  -remoteWrite.url=http://victoriametrics:8428 \   # persist recording rules + alert state
+  -remoteWrite.url=http://victoriametrics:8428 \
   -notifier.url=http://alertmanager:9093 \
   -rule=/etc/vmalert/rules/*.yml
+# -remoteWrite.url persists recording-rule results and alert state
 ```
 
 Rule files use the same format as Prometheus:
@@ -127,7 +130,7 @@ write to `http://vminsert:8480/insert/0/prometheus/api/v1/write`, query `http://
 
 ## Common pitfalls
 
-- **Default retention is 1 month.** Set `-retentionPeriod` explicitly (`6`, `2y`, `90d`, etc.) on day one. Changing it later only affects data going forward from the next partition.
+- **Default retention is 1 month.** Set `-retentionPeriod` explicitly (`6`, `2y`, `90d`, etc.) on day one. Shortening it later deletes older data during the next retention cleanup, so treat changes carefully.
 - **MetricsQL is *not* byte-for-byte PromQL.** `rate()`/`increase()` don't extrapolate like Prometheus and take the previous sample into account, so numbers can differ slightly (VictoriaMetrics argues they're more accurate). If you're running dual backends during a migration, expect small dashboard and alert-threshold differences; check alert thresholds that sit near a boundary.
 - **HA Prometheus/vmagent pairs need deduplication.** If two replicas write the same series, set `-dedup.minScrapeInterval` (e.g. equal to the scrape interval) on single-node or on `vmselect`/`vmstorage` in a cluster, otherwise you store and sum duplicates.
 - **Cluster replication is off by default.** `vmstorage` nodes shard data but don't replicate unless you set `-replicationFactor=N` on `vminsert` (and run at least `2N-1` storage nodes for safety). Losing a node without replication means losing that shard's data. Many teams instead run two independent clusters/regions fed by `vmagent` fan-out.
